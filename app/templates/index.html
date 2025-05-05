@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Profile Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <form method="POST" class="mb-4">
+            <div class="input-group">
+                <input type="text" name="username" class="form-control" placeholder="Enter GitHub username" required>
+                <button type="submit" class="btn btn-primary">Analyze</button>
+            </div>
+        </form>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% if user_stats %}
+        <div class="profile-section">
+            <div class="profile-left">
+                <img src="{{ user_stats.user.avatar_url }}" alt="Profile Picture" class="profile-image">
+                <div class="api-limits mt-3">
+                    <div class="limit-item">
+                        <span class="limit-label">API Calls Remaining:</span>
+                        <span class="limit-value">{{ user_stats.rate_limit.core.remaining }}/{{ user_stats.rate_limit.core.limit }}</span>
+                    </div>
+                    <div class="limit-item">
+                        <span class="limit-label">Reset Time:</span>
+                        <span class="limit-value">{{ user_stats.rate_limit.core.reset_time }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-right">
+                <h2 class="profile-name">{{ user_stats.user.name or user_stats.user.login }}</h2>
+                <div class="profile-username">{{ user_stats.user.login }}</div>
+                
+                <div class="profile-stats">
+                    <span title="Public Repositories">📦 {{ user_stats.stats.public_repos }} repos</span>
+                    <span title="Followers">👥 {{ user_stats.stats.followers }} followers</span>
+                    <span title="Following">👤 {{ user_stats.stats.following }} following</span>
+                    <span title="Total Stars">⭐ {{ user_stats.stats.total_stars }} stars</span>
+                    <span title="Total Issues">🎯 {{ user_stats.stats.total_issues }} issues</span>
+                    <span title="Total Pull Requests">🔄 {{ user_stats.stats.total_prs }} PRs</span>
+                </div>
+
+                {% if user_stats.user.bio %}
+                <div class="profile-bio">{{ user_stats.user.bio }}</div>
+                {% endif %}
+
+                <div class="contribution-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user_stats.stats.contributions }}</div>
+                        <div class="stat-label">Total Contributions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user_stats.stats.total_stars }}</div>
+                        <div class="stat-label">Total Stars</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user_stats.stats.total_forks }}</div>
+                        <div class="stat-label">Total Forks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user_stats.stats.total_issues }}</div>
+                        <div class="stat-label">Total Issues</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user_stats.stats.total_prs }}</div>
+                        <div class="stat-label">Total PRs</div>
+                    </div>
+                </div>
+
+                <div class="share-buttons">
+                    <a href="https://twitter.com/share?url={{ request.url }}" class="share-button" target="_blank">Share on Twitter</a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" class="share-button" target="_blank">Share on Facebook</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="commits-chart">
+            <div class="chart-title">Commits per Quarter</div>
+            <canvas id="commitsTimeline"></canvas>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-container">
+                <div class="chart-title">Repos per Language</div>
+                <canvas id="languageRepos" class="donut-chart"></canvas>
+                <div class="chart-legend" id="languageReposLegend"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Stars per Language</div>
+                <canvas id="languageStars" class="donut-chart"></canvas>
+                <div class="chart-legend" id="languageStarsLegend"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Commits per Language</div>
+                <canvas id="languageCommits" class="donut-chart"></canvas>
+                <div class="chart-legend" id="languageCommitsLegend"></div>
+            </div>
+        </div>
+
+        <div class="repo-charts">
+            <div class="repo-chart">
+                <div class="chart-title">Commits per Repo (top 10)</div>
+                <canvas id="repoCommits" class="donut-chart"></canvas>
+                <div class="chart-legend" id="repoCommitsLegend"></div>
+            </div>
+
+            <div class="repo-chart">
+                <div class="chart-title">Stars per Repo (top 10)</div>
+                <canvas id="repoStars" class="donut-chart"></canvas>
+                <div class="chart-legend" id="repoStarsLegend"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Made with using Flask, Python & GitHub API
+        </div>
+
+        <script id="github-data" type="application/json">
+            {{ user_stats | tojson | safe }}
+        </script>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html> 
