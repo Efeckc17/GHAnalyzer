@@ -26,7 +26,7 @@ A Flask-based web application for visualizing detailed GitHub user statistics an
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/GHAnalyzer.git
+git clone https://github.com/Efeckc17/GHAnalyzer.git
 cd GHAnalyzer
 ```
 
