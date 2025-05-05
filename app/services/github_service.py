@@ -74,16 +74,27 @@ class GitHubService:
             for quarter, count in repo.get('commit_history', {}).items():
                 total_commit_history[quarter] += count
         
-        languages = defaultdict(int)
+       
+        repos_by_language = defaultdict(int)
+        stars_by_language = defaultdict(int)
+        commits_by_language = defaultdict(int)
+        
         for repo in repo_stats:
-            languages[repo['language']] += 1
+            lang = repo['language'] or 'Unknown'
+            repos_by_language[lang] += 1
+            stars_by_language[lang] += repo['stars']
+            commits_by_language[lang] += repo['commits']
         
         total_stars = sum(repo['stars'] for repo in repo_stats)
         total_forks = sum(repo['forks'] for repo in repo_stats)
         total_issues = sum(repo['issues'] for repo in repo_stats)
         total_prs = sum(repo['pull_requests'] for repo in repo_stats)
         
-        top_languages = dict(sorted(languages.items(), key=lambda x: x[1], reverse=True)[:5])
+        
+        top_languages_by_repos = dict(sorted(repos_by_language.items(), key=lambda x: x[1], reverse=True)[:5])
+        top_languages_by_stars = dict(sorted(stars_by_language.items(), key=lambda x: x[1], reverse=True)[:5])
+        top_languages_by_commits = dict(sorted(commits_by_language.items(), key=lambda x: x[1], reverse=True)[:5])
+        
         top_repos = sorted(repo_stats, key=lambda x: x['stars'], reverse=True)[:5]
         
         now = datetime.now(timezone.utc)
@@ -115,9 +126,13 @@ class GitHubService:
                 'commit_history': dict(sorted(total_commit_history.items(), reverse=True))
             },
             'languages': {
-                'distribution': dict(languages),
-                'top_languages': top_languages,
-                'total_languages': len(languages)
+                'by_repos': dict(repos_by_language),
+                'by_stars': dict(stars_by_language),
+                'by_commits': dict(commits_by_language),
+                'top_by_repos': top_languages_by_repos,
+                'top_by_stars': top_languages_by_stars,
+                'top_by_commits': top_languages_by_commits,
+                'total_languages': len(repos_by_language)
             },
             'repos': {
                 'top_repos': [{

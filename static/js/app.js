@@ -1,4 +1,3 @@
-
 let githubData = {};
 
 
@@ -15,28 +14,50 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-function initializeCharts(userData) {
+function initializeCharts(data) {
     
-    const commitData = processCommitData(userData.stats.commit_history);
-    createCommitsTimeline(commitData);
+    console.log('Language data:', {
+        repos: data.languages.by_repos,
+        stars: data.languages.by_stars,
+        commits: data.languages.by_commits
+    });
 
     
-    createLanguageChart('languageRepos', 'languageReposLegend', userData.languages.distribution);
-    createLanguageChart('languageStars', 'languageStarsLegend', userData.languages.top_languages);
-    createLanguageChart('languageCommits', 'languageCommitsLegend', userData.languages.distribution);
+    if (data.languages) {
+        if (data.languages.by_repos) {
+            createLanguageChart('reposPerLanguage', 'reposPerLanguageLegend', data.languages.by_repos);
+        }
+        if (data.languages.by_stars) {
+            createLanguageChart('starsPerLanguage', 'starsPerLanguageLegend', data.languages.by_stars);
+        }
+        if (data.languages.by_commits) {
+            createLanguageChart('commitsPerLanguage', 'commitsPerLanguageLegend', data.languages.by_commits);
+        }
+    }
 
     
-    const commitsByRepo = userData.repos.top_repos.map(repo => ({
-        name: repo.name,
-        value: repo.commits
-    }));
-    createRepoChart('repoCommits', 'repoCommitsLegend', commitsByRepo);
+    const commitHistory = data.stats.commit_history;
+    if (commitHistory) {
+        createCommitsTimeline({
+            labels: Object.keys(commitHistory),
+            values: Object.values(commitHistory)
+        });
+    }
 
-    const starsByRepo = userData.repos.top_repos.map(repo => ({
-        name: repo.name,
-        value: repo.stars
-    }));
-    createRepoChart('repoStars', 'repoStarsLegend', starsByRepo);
+    
+    if (data.repos && data.repos.top_repos) {
+        const commitsByRepo = data.repos.top_repos.map(repo => ({
+            name: repo.name,
+            value: repo.commits
+        }));
+        createRepoChart('repoCommits', 'repoCommitsLegend', commitsByRepo);
+
+        const starsByRepo = data.repos.top_repos.map(repo => ({
+            name: repo.name,
+            value: repo.stars
+        }));
+        createRepoChart('repoStars', 'repoStarsLegend', starsByRepo);
+    }
 }
 
 function processCommitData(commitHistory) {
@@ -266,4 +287,111 @@ function createRepoChart(canvasId, legendId, data) {
     createCustomLegend(canvasId, legendId, legendData);
 
     return chart;
+}
+
+function createLanguageChart(canvasId, legendId, data) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+   
+    const chartData = Object.entries(data).map(([language, value]) => ({
+        language,
+        value
+    })).sort((a, b) => b.value - a.value);
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(22, 27, 34, 0.95)',
+                titleColor: '#c9d1d9',
+                bodyColor: '#8b949e',
+                borderColor: '#30363d',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: true,
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        return `${label}: ${value}`;
+                    }
+                }
+            }
+        },
+        layout: {
+            padding: {
+                top: 20,
+                bottom: 20
+            }
+        },
+        cutout: '60%'
+    };
+
+    const colors = chartData.map((_, index) => {
+        const hue = (index * 137.5) % 360;
+        return `hsl(${hue}, 70%, 50%)`;
+    });
+
+    const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: chartData.map(item => item.language),
+            datasets: [{
+                data: chartData.map(item => item.value),
+                backgroundColor: colors,
+                borderColor: '#0d1117',
+                borderWidth: 2,
+                hoverOffset: 15
+            }]
+        },
+        options: chartOptions
+    });
+
+    
+    const legendData = chartData.map((item, index) => ({
+        label: item.language,
+        value: item.value,
+        color: colors[index]
+    }));
+    createCustomLegend(canvasId, legendId, legendData);
+
+    return chart;
+}
+
+function createCustomLegend(chartId, legendId, data) {
+    const legendContainer = document.getElementById(legendId);
+    if (!legendContainer) return;
+
+    legendContainer.innerHTML = data.map(item => `
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: ${item.color}"></span>
+            <span class="legend-label">${item.label}</span>
+            <span class="legend-value">${item.value}</span>
+        </div>
+    `).join('');
+
+    
+    const legendItems = legendContainer.querySelectorAll('.legend-item');
+    const chart = Chart.getChart(chartId);
+
+    legendItems.forEach((item, index) => {
+        item.addEventListener('click', () => {
+            const datasetIndex = 0; 
+            const meta = chart.getDatasetMeta(datasetIndex);
+
+           
+            meta.data[index].hidden = !meta.data[index].hidden;
+            
+            
+            item.classList.toggle('disabled');
+            
+            
+            chart.update();
+        });
+    });
 } 

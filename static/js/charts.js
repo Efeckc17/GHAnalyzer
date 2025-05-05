@@ -1,4 +1,3 @@
-
 const chartColors = {
     background: '#0d1117',
     cardBg: '#161b22',
@@ -49,7 +48,7 @@ const commonChartOptions = {
     }
 };
 
-// Donut grafik seçenekleri
+
 const donutOptions = {
     ...commonChartOptions,
     cutout: '60%',
@@ -135,35 +134,67 @@ function createCommitsTimeline(data) {
 
 function createLanguageChart(canvasId, legendId, data) {
     const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
+    if (!ctx) {
+        console.error(`Canvas not found: ${canvasId}`);
+        return;
+    }
+
+    
+    console.log(`Creating chart for ${canvasId}:`, data);
+
+    if (!data || Object.keys(data).length === 0) {
+        console.warn(`No data for chart: ${canvasId}`);
+        return;
+    }
 
     const labels = Object.keys(data);
     const values = Object.values(data);
     const colors = labels.map(lang => getLanguageColor(lang));
 
-    const chart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                backgroundColor: colors,
-                borderColor: chartColors.background,
-                borderWidth: 2
-            }]
-        },
-        options: donutOptions
-    });
+    const chartOptions = {
+        ...donutOptions,
+        plugins: {
+            ...donutOptions.plugins,
+            tooltip: {
+                ...donutOptions.plugins.tooltip,
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        return `${label}: ${value}`;
+                    }
+                }
+            }
+        }
+    };
 
-    
-    const legendData = labels.map((label, index) => ({
-        label: label,
-        value: values[index],
-        color: colors[index]
-    }));
-    createCustomLegend(canvasId, legendId, legendData);
+    try {
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: chartColors.background,
+                    borderWidth: 2,
+                    hoverOffset: 15
+                }]
+            },
+            options: chartOptions
+        });
 
-    return chart;
+        const legendData = labels.map((label, index) => ({
+            label: label,
+            value: values[index],
+            color: colors[index]
+        }));
+        createCustomLegend(canvasId, legendId, legendData);
+
+        return chart;
+    } catch (error) {
+        console.error(`Error creating chart ${canvasId}:`, error);
+    }
 }
 
 function createRepoChart(canvasId, legendId, data) {
